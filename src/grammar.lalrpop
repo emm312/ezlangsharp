@@ -1,0 +1,145 @@
+use crate::ast::*;
+use std::str::FromStr;
+use lalrpop_util::ParseError;
+
+use crate::*;
+
+grammar<'err>(errors: &'err mut Vec<ParseError<usize, Token<'input>, &'static str>>);
+
+match {
+    r#"\"[\w|\d|\s]+\""#,
+    r"[0-9]+",
+    r"[0-9]+\.[0-9]+",
+    r"[a-zA-Z_][a-zA-Z0-9_]*",
+    ";",
+    ",",
+    "(",
+    ")",
+    "{",
+    "}",
+    "[",
+    "]",
+    "+",
+    "-",
+    "*",
+    "/",
+    "<",
+    ">",
+    "<=",
+    ">=",
+    "==",
+    "!=",
+    "=",
+    "fun",
+    "import",
+    "ret",
+    "if",
+    "else",
+    "while",
+    "let",
+    "\"",
+    r"//.*" => { },
+    r"\s+" => { }
+}
+
+pub EzLangSharp: Vec<TopLvl> = {
+    TopLvl*,
+}
+
+TopLvl: TopLvl = {
+    FuncDef,
+    // Import
+}
+
+FuncDef: TopLvl = {
+    "fun" <name: Ident> "(" <args: Comma<Ident>> ")" "{" <body: Block> "}" => TopLvl::FuncDef(name, args, body),
+    ! => {
+        gen_err!(errors, TopLvl::Error, <>.error)
+    }
+}
+
+FuncArg: String = {
+    <args: Ident> ","? => args,
+}
+
+Block: Vec<Stmt> = {
+    Stmt*,
+}
+
+Stmt: Stmt = {
+    "if" <cond: Expr> "{" <body: Block> "}" <elseb: ElseBlock?> => Stmt::If(cond, body, elseb),
+    "while" <cond: Expr> "{" <body: Block> "}" => Stmt::While(cond, body),
+    "let" <name: Ident> "=" <expr: Expr> ";" => Stmt::Let(name, expr),
+    <e: Expr> ";" => Stmt::Expr(e),
+    "ret" <expr: Expr> ";" => Stmt::Return(expr),
+    <var: Ident> "=" <val: Expr> ";" => Stmt::Assign(var, val),
+    ! => {
+        gen_err!(errors, Stmt::Error, <>.error)
+    }
+}
+
+ElseBlock: Vec<Stmt> = {
+    "else" "{" <body: Block> "}" => body
+}
+
+Term: Expr = {
+    FuncCall => <>,
+    Int => Expr::Int(<>),
+    Float => Expr::Float(<>),
+    Ident => Expr::Ident(<>),
+    ArrayLit => Expr::ArrayLit(<>),
+    StringLit => Expr::StringLit(<>),
+    "(" <expr: Expr> ")" => expr,
+}
+
+Factor: Expr = {
+    <term: Term> => term,
+    <term: Term> "*" <factor: Factor> => Expr::BinOp(Box::new(term), BinOp::Mul, Box::new(factor)),
+    <term: Term> "/" <factor: Factor> => Expr::BinOp(Box::new(term), BinOp::Div, Box::new(factor)),
+}
+
+AddSub: Expr = {
+    <factor: Factor> => factor,
+    <factor: Factor> "+" <addsub: AddSub> => Expr::BinOp(Box::new(factor), BinOp::Add, Box::new(addsub)),
+    <factor: Factor> "-" <addsub: AddSub> => Expr::BinOp(Box::new(factor), BinOp::Sub, Box::new(addsub)),
+}
+
+pub Expr: Expr = {
+    <addsub: AddSub> => addsub,
+    <addsub: AddSub> "<" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Lt, Box::new(expr)),
+    <addsub: AddSub> ">" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Gt, Box::new(expr)),
+    <addsub: AddSub> "<=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Le, Box::new(expr)),
+    <addsub: AddSub> ">=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Ge, Box::new(expr)),
+    <addsub: AddSub> "==" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Eq, Box::new(expr)),
+    <addsub: AddSub> "!=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Ne, Box::new(expr)),
+    ! => {
+        gen_err!(errors, Expr::Error, <>.error)
+    }
+}
+
+Int: i64 = r"[0-9]+" => i64::from_str_radix(<>, 10).unwrap();
+Float: f64 = r"[0-9]+\.[0-9]+" => f64::from_str(<>).unwrap();
+Ident: String = r"[a-zA-Z_][a-zA-Z0-9_]*" => <>.to_string();
+ArrayLit: Vec<Expr> = {
+    "[" <exprs: Comma<Expr>> "]" => exprs
+}
+
+StringLit: String = {
+    r#"\"[\w|\d|\s]+\""# => {
+        let mut s = <>.to_string();
+        s.remove(0);
+        s.pop();
+        s
+    }
+}
+FuncCall: Expr = {
+    <name: Ident> "(" <args: Comma<Expr>> ")" => Expr::Call(name, args)
+}
+
+Comma<T>: Vec<T> = {
+    <items: (<T> ",")*> <last: T?> => {
+        let mut items = items;
+        items.extend(last);
+        items
+    }
+};
