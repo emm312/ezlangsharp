@@ -1,5 +1,6 @@
-use lalrpop_util::{lalrpop_mod, ErrorRecovery};
+use lalrpop_util::lalrpop_mod;
 pub mod ast;
+pub mod semantic_analysis;
 lalrpop_mod!(pub grammar);
 
 #[macro_export]

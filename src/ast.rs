@@ -1,20 +1,20 @@
-use std::{ops::Range, fmt::Display};
+use std::ops::Range;
 
-use lalrpop_util::{lexer::Token, ParseError};
+use lalrpop_util::ParseError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Float(f64),
-    Int(i64),
-    StringLit(String),
-    Ident(String),
-    ArrayLit(Vec<Expr>),
-    ArrayIndex(String, Box<Expr>),
-    BinOp(Box<Expr>, BinOp, Box<Expr>),
-    Call(String, Vec<Expr>),
-    Return(Box<Expr>),
-    Break,
-    Continue,
+    Float(f64, SourceInfo),
+    Int(i64, SourceInfo),
+    StringLit(String, SourceInfo),
+    Ident(String, SourceInfo),
+    ArrayLit(Vec<Expr>, SourceInfo),
+    ArrayIndex(String, Box<Expr>, SourceInfo),
+    BinOp(Box<Expr>, BinOp, Box<Expr>, SourceInfo),
+    Call(String, Vec<Expr>, SourceInfo),
+    Return(Box<Expr>, SourceInfo),
+    Break(SourceInfo),
+    Continue(SourceInfo),
     Error
 }
 
@@ -38,20 +38,20 @@ pub enum BinOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TopLvl {
-    Import(String),
-    FuncDef(String, Vec<String>, Vec<Stmt>),
+    Import(String, SourceInfo),
+    FuncDef(String, Vec<String>, Vec<Stmt>, SourceInfo),
     Error
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    Expr(Expr),
-    If(Expr, Vec<Stmt>, Option<Vec<Stmt>>),
-    While(Expr, Vec<Stmt>),
-    Block(Vec<Stmt>),
-    Return(Expr),
-    Let(String, Expr),
-    Assign(String, Expr),
+    Expr(Expr, SourceInfo),
+    If(Expr, Vec<Stmt>, Option<Vec<Stmt>>, SourceInfo),
+    While(Expr, Vec<Stmt>, SourceInfo),
+    Block(Vec<Stmt>, SourceInfo),
+    Return(Expr, SourceInfo),
+    Let(String, Expr, SourceInfo),
+    Assign(String, Expr, SourceInfo),
     Error
 }
 
@@ -64,5 +64,16 @@ impl<L, T, E> Error<L, T, E> {
         Self {
             err
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SourceInfo {
+    pub span: Range<usize>
+}
+
+impl SourceInfo {
+    pub fn new(range: Range<usize>) -> SourceInfo {
+        SourceInfo { span: range }
     }
 }

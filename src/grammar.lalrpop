@@ -52,7 +52,7 @@ TopLvl: TopLvl = {
 }
 
 FuncDef: TopLvl = {
-    "fun" <name: Ident> "(" <args: Comma<Ident>> ")" "{" <body: Block> "}" => TopLvl::FuncDef(name, args, body),
+    <start: @L> "fun" <name: Ident> "(" <args: Comma<Ident>> ")" "{" <body: Block> "}" <end:@R>=> TopLvl::FuncDef(name, args, body, SourceInfo::new(start..end)),
     ! => {
         gen_err!(errors, TopLvl::Error, <>.error)
     }
@@ -67,12 +67,12 @@ Block: Vec<Stmt> = {
 }
 
 Stmt: Stmt = {
-    "if" <cond: Expr> "{" <body: Block> "}" <elseb: ElseBlock?> => Stmt::If(cond, body, elseb),
-    "while" <cond: Expr> "{" <body: Block> "}" => Stmt::While(cond, body),
-    "let" <name: Ident> "=" <expr: Expr> ";" => Stmt::Let(name, expr),
-    <e: Expr> ";" => Stmt::Expr(e),
-    "ret" <expr: Expr> ";" => Stmt::Return(expr),
-    <var: Ident> "=" <val: Expr> ";" => Stmt::Assign(var, val),
+    <start:@L> "if" <cond: Expr> "{" <body: Block> "}" <elseb: ElseBlock?> <end:@R> => Stmt::If(cond, body, elseb, SourceInfo::new(start..end)),
+    <start:@L> "while" <cond: Expr> "{" <body: Block> "}" <end:@R> => Stmt::While(cond, body, SourceInfo::new(start..end)),
+    <start:@L> "let" <name: Ident> "=" <expr: Expr> ";" <end:@R> => Stmt::Let(name, expr, SourceInfo::new(start..end)),
+    <start:@L> <e: Expr> ";" <end:@R> => Stmt::Expr(e, SourceInfo::new(start..end)),
+    <start:@L> "ret" <expr: Expr> ";" <end:@R> => Stmt::Return(expr, SourceInfo::new(start..end)),
+    <start:@L> <var: Ident> "=" <val: Expr> ";" <end:@R> => Stmt::Assign(var, val, SourceInfo::new(start..end)),
     ! => {
         gen_err!(errors, Stmt::Error, <>.error)
     }
@@ -84,34 +84,34 @@ ElseBlock: Vec<Stmt> = {
 
 Term: Expr = {
     FuncCall => <>,
-    Int => Expr::Int(<>),
-    Float => Expr::Float(<>),
-    Ident => Expr::Ident(<>),
-    ArrayLit => Expr::ArrayLit(<>),
-    StringLit => Expr::StringLit(<>),
+    <start:@L> <lit:Int> <end:@R> => Expr::Int(lit, SourceInfo::new(start..end)),
+    <start:@L> <lit:Float> <end:@R> => Expr::Float(lit, SourceInfo::new(start..end)),
+    <start:@L> <lit:Ident> <end:@R> => Expr::Ident(lit, SourceInfo::new(start..end)),
+    <start:@L> <lit:ArrayLit> <end:@R> => Expr::ArrayLit(lit, SourceInfo::new(start..end)),
+    <start:@L> <lit:StringLit> <end:@R> => Expr::StringLit(lit, SourceInfo::new(start..end)),
     "(" <expr: Expr> ")" => expr,
 }
 
 Factor: Expr = {
     <term: Term> => term,
-    <term: Term> "*" <factor: Factor> => Expr::BinOp(Box::new(term), BinOp::Mul, Box::new(factor)),
-    <term: Term> "/" <factor: Factor> => Expr::BinOp(Box::new(term), BinOp::Div, Box::new(factor)),
+    <start:@L> <term: Term> "*" <factor: Factor> <end:@R> => Expr::BinOp(Box::new(term), BinOp::Mul, Box::new(factor), SourceInfo::new(start..end)),
+    <start:@L> <term: Term> "/" <factor: Factor> <end:@R> => Expr::BinOp(Box::new(term), BinOp::Div, Box::new(factor), SourceInfo::new(start..end)),
 }
 
 AddSub: Expr = {
     <factor: Factor> => factor,
-    <factor: Factor> "+" <addsub: AddSub> => Expr::BinOp(Box::new(factor), BinOp::Add, Box::new(addsub)),
-    <factor: Factor> "-" <addsub: AddSub> => Expr::BinOp(Box::new(factor), BinOp::Sub, Box::new(addsub)),
+    <start:@L> <factor: Factor> "+" <addsub: AddSub> <end:@R> => Expr::BinOp(Box::new(factor), BinOp::Add, Box::new(addsub), SourceInfo::new(start..end)),
+    <start:@L> <factor: Factor> "-" <addsub: AddSub> <end:@R> => Expr::BinOp(Box::new(factor), BinOp::Sub, Box::new(addsub), SourceInfo::new(start..end)),
 }
 
 pub Expr: Expr = {
     <addsub: AddSub> => addsub,
-    <addsub: AddSub> "<" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Lt, Box::new(expr)),
-    <addsub: AddSub> ">" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Gt, Box::new(expr)),
-    <addsub: AddSub> "<=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Le, Box::new(expr)),
-    <addsub: AddSub> ">=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Ge, Box::new(expr)),
-    <addsub: AddSub> "==" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Eq, Box::new(expr)),
-    <addsub: AddSub> "!=" <expr: Expr> => Expr::BinOp(Box::new(addsub), BinOp::Ne, Box::new(expr)),
+    <start:@L> <addsub: AddSub> "<" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Lt, Box::new(expr), SourceInfo::new(start..end)),
+    <start:@L> <addsub: AddSub> ">" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Gt, Box::new(expr), SourceInfo::new(start..end)),
+    <start:@L> <addsub: AddSub> "<=" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Le, Box::new(expr), SourceInfo::new(start..end)),
+    <start:@L> <addsub: AddSub> ">=" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Ge, Box::new(expr), SourceInfo::new(start..end)),
+    <start:@L> <addsub: AddSub> "==" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Eq, Box::new(expr), SourceInfo::new(start..end)),
+    <start:@L> <addsub: AddSub> "!=" <expr: Expr> <end:@R> => Expr::BinOp(Box::new(addsub), BinOp::Ne, Box::new(expr), SourceInfo::new(start..end)),
     ! => {
         gen_err!(errors, Expr::Error, <>.error)
     }
@@ -133,7 +133,7 @@ StringLit: String = {
     }
 }
 FuncCall: Expr = {
-    <name: Ident> "(" <args: Comma<Expr>> ")" => Expr::Call(name, args)
+    <start:@L> <name: Ident> "(" <args: Comma<Expr>> ")" <end:@R> => Expr::Call(name, args, SourceInfo::new(start..end))
 }
 
 Comma<T>: Vec<T> = {
