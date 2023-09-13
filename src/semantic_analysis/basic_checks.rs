@@ -54,7 +54,7 @@ impl FunctionChecker {
                             Diagnostic::error()
                                 .with_message("Function not found")
                                 .with_labels(vec![Label::primary(0, info.span.clone())
-                                    .with_message(format!("Function {} not found", name))]),
+                                    .with_message(format!("Function `{}` not found", name))]),
                         );
                         continue;
                     }

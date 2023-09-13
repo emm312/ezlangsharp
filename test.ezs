@@ -1,6 +1,7 @@
 fun pp() {
     let a = (3+3);
     let b = 6;
+    let c = "penis";
     f(x, y, z, 5));
     o();
     f(a, b, c);
