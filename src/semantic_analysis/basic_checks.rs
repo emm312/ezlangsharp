@@ -1,6 +1,6 @@
-use codespan_reporting::diagnostic::{Diagnostic, Label, LabelStyle};
+use codespan_reporting::diagnostic::{Diagnostic, Label};
 
-use crate::ast::{Stmt, TopLvl};
+use crate::ast::{Expr, Stmt, TopLvl};
 
 use super::Function;
 
@@ -12,17 +12,14 @@ impl FunctionChecker {
     pub fn new(ast: &Vec<TopLvl>) -> FunctionChecker {
         let mut funcs = Vec::new();
         for line in ast {
-            match line {
-                TopLvl::FuncDef(name, args, body, source_info) => {
-                    let func = Function {
-                        body: body.clone(),
-                        name: name.clone(),
-                        args: args.clone(),
-                        source_info: source_info.clone(),
-                    };
-                    funcs.push(func);
-                }
-                _ => (),
+            if let TopLvl::FuncDef(name, args, body, source_info) = line {
+                let func = Function {
+                    body: body.clone(),
+                    name: name.clone(),
+                    args: args.clone(),
+                    source_info: source_info.clone(),
+                };
+                funcs.push(func);
             }
         }
         FunctionChecker { funcs }
@@ -50,47 +47,38 @@ impl FunctionChecker {
         let mut errors = Vec::new();
         for func in &self.funcs {
             for stmt in &func.body {
-                if let Stmt::Expr(expr, ..) = stmt {
-                    match expr {
-                        crate::ast::Expr::Call(name, args, info) => {
-                            let callee_option = self.find_func(name.clone());
-                            if let None = callee_option {
-                                errors.push(
-                                    Diagnostic::error()
-                                        .with_message("Function not found")
-                                        .with_labels(vec![Label::primary(0, info.span.clone())
-                                            .with_message(format!("Function {} not found", name))]),
-                                );
-                                continue;
-                            }
-                            let callee = callee_option.unwrap();
-                            let arg_count = args.len();
-                            if arg_count != callee.args.len() {
-                                errors.push(
-                                    Diagnostic::error()
-                                        .with_message("Function called with too many args")
-                                        .with_labels(vec![
-                                            Label::primary(0, info.span.clone()).with_message(
-                                                format!(
-                                                    "Expected {} arguments, got {}",
-                                                    callee.args.len(),
-                                                    arg_count
-                                                ),
-                                            ),
-                                            Label::secondary(0, callee.source_info.span.clone())
-                                                .with_message(format!(
-                                                    "Note: Function defined here"
-                                                )),
-                                        ]),
-                                );
-                            }
-                        }
-                        _ => (),
+                if let Stmt::Expr(Expr::Call(name, args, info), ..) = stmt {
+                    let callee_option = self.find_func(name.clone());
+                    if callee_option.is_none() {
+                        errors.push(
+                            Diagnostic::error()
+                                .with_message("Function not found")
+                                .with_labels(vec![Label::primary(0, info.span.clone())
+                                    .with_message(format!("Function {} not found", name))]),
+                        );
+                        continue;
+                    }
+                    let callee = callee_option.unwrap();
+                    let arg_count = args.len();
+                    if arg_count != callee.args.len() {
+                        errors.push(
+                            Diagnostic::error()
+                                .with_message("Function called with too many args")
+                                .with_labels(vec![
+                                    Label::primary(0, info.span.clone()).with_message(format!(
+                                        "Expected {} arguments, got {}",
+                                        callee.args.len(),
+                                        arg_count
+                                    )),
+                                    Label::secondary(0, callee.source_info.span.clone())
+                                        .with_message("Note: Function defined here".to_string()),
+                                ]),
+                        );
                     }
                 }
             }
         }
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             return Some(errors);
         }
         None
@@ -104,13 +92,13 @@ impl FunctionChecker {
         if let Some(error) = self.check_expr_args() {
             errors.extend(error);
         }
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             return Some(errors);
         }
         None
     }
 
     fn find_func(&self, name: String) -> Option<&Function> {
-        self.funcs.iter().filter(|e| e.name == name).nth(0)
+        self.funcs.iter().find(|e| e.name == name)
     }
 }
