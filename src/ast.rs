@@ -15,7 +15,7 @@ pub enum Expr {
     Return(Box<Expr>, SourceInfo),
     Break(SourceInfo),
     Continue(SourceInfo),
-    Error
+    Error,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,7 +40,7 @@ pub enum BinOp {
 pub enum TopLvl {
     Import(String, SourceInfo),
     FuncDef(String, Vec<String>, Vec<Stmt>, SourceInfo),
-    Error
+    Error,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,24 +52,22 @@ pub enum Stmt {
     Return(Expr, SourceInfo),
     Let(String, Expr, SourceInfo),
     Assign(String, Expr, SourceInfo),
-    Error
+    Error,
 }
 
 pub struct Error<L, T, E> {
-    pub err: ParseError<L, T, E>
+    pub err: ParseError<L, T, E>,
 }
 
 impl<L, T, E> Error<L, T, E> {
     pub fn new(err: ParseError<L, T, E>) -> Self {
-        Self {
-            err
-        }
+        Self { err }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceInfo {
-    pub span: Range<usize>
+    pub span: Range<usize>,
 }
 
 impl SourceInfo {

@@ -1,4 +1,9 @@
-fun main() {
+fun pp() {
     let a = (3+3);
-    let 3-9 =;
+    let b = 6;
+    f(x, y, z, 5));
+    o();
+    f(a, b, c);
 }
+
+fun f(x, y) {}
