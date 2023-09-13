@@ -15,6 +15,7 @@ pub enum Expr {
     Return(Box<Expr>, SourceInfo),
     Break(SourceInfo),
     Continue(SourceInfo),
+    BoolLit(bool, SourceInfo),
     Error,
 }
 

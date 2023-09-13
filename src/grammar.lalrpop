@@ -37,6 +37,8 @@ match {
     "else",
     "while",
     "let",
+    "true",
+    "false",
     "\"",
     r"//.*" => { },
     r"\s+" => { }
@@ -89,6 +91,7 @@ Term: Expr = {
     <start:@L> <lit:Ident> <end:@R> => Expr::Ident(lit, SourceInfo::new(start..end)),
     <start:@L> <lit:ArrayLit> <end:@R> => Expr::ArrayLit(lit, SourceInfo::new(start..end)),
     <start:@L> <lit:StringLit> <end:@R> => Expr::StringLit(lit, SourceInfo::new(start..end)),
+    <start:@L> <lit:Bool> <end:@R> => Expr::BoolLit(lit, SourceInfo::new(start..end)),
     "(" <expr: Expr> ")" => expr,
 }
 
@@ -122,6 +125,10 @@ Float: f64 = r"[0-9]+\.[0-9]+" => f64::from_str(<>).unwrap();
 Ident: String = r"[a-zA-Z_][a-zA-Z0-9_]*" => <>.to_string();
 ArrayLit: Vec<Expr> = {
     "[" <exprs: Comma<Expr>> "]" => exprs
+}
+Bool: bool = {
+    "true" => true,
+    "false" => false
 }
 
 StringLit: String = {
