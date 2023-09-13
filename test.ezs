@@ -5,6 +5,7 @@ fun pp() {
     f(x, y, z, 5));
     o();
     f(a, b, c);
+    let x = 4+;
 }
 
 fun f(x, y) {}
