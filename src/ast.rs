@@ -1,7 +1,5 @@
 use std::ops::Range;
 
-use lalrpop_util::ParseError;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Float(f64, SourceInfo),
@@ -54,16 +52,6 @@ pub enum Stmt {
     Let(String, Expr, SourceInfo),
     Assign(String, Expr, SourceInfo),
     Error,
-}
-
-pub struct Error<L, T, E> {
-    pub err: ParseError<L, T, E>,
-}
-
-impl<L, T, E> Error<L, T, E> {
-    pub fn new(err: ParseError<L, T, E>) -> Self {
-        Self { err }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
